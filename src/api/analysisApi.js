@@ -1,16 +1,16 @@
 import axios from 'axios';
 import { auth } from '../firebase';
 
-const API_BASE_URL = 'https://trends-ai-backend-image2-382329904395.europe-west1.run.app';
+const API_BASE_URL = 'https://trends-ai-backend-image2-382329904395.europe-west1.run.app/api';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
 });
 
+// Intercepteur pour ajouter le token d'authentification
 apiClient.interceptors.request.use(async (config) => {
-  const user = auth.currentUser;
-  if (user) {
-    const token = await user.getIdToken();
+  if (auth.currentUser) {
+    const token = await auth.currentUser.getIdToken();
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
@@ -18,28 +18,45 @@ apiClient.interceptors.request.use(async (config) => {
   return Promise.reject(error);
 });
 
-export const startAnalysisJob = (data) => {
-  // data = { sourceType: 'instagram', sourceInput: '...' }
-  return apiClient.post('/api/analysis/start', data);
+
+// === Fonctions d'API Corrigées ===
+
+export const startAnalysisJob = (jobData) => {
+  // CORRECT : Le chemin commence par /analysis/, pas /api/analysis/
+  return apiClient.post('/analysis/start', jobData);
 };
 
-export const fetchJobStatus = async (jobId) => {
-  const { data } = await apiClient.get(`/api/analysis/status/${jobId}`);
-  return data;
+export const getJobStatus = (jobId) => {
+  return apiClient.get(`/analysis/status/${jobId}`);
 };
-
-export const enrichAnalysisReport = async (jobId) => {
-  const { data } = await apiClient.post(`/api/analysis/enrich/${jobId}`);
-  return data;
-};
-
-export const generateCreativeImage = async (selections) => {
-  // selections = { style, garments, color }
-  const { data } = await apiClient.post('/api/analysis/generate-image', selections);
-  return data;
-}
 
 export const fetchMyJobs = async () => {
-  const { data } = await apiClient.get('/api/analysis/my-jobs');
+    // CORRECT : Le chemin commence par /analysis/
+    const { data } = await apiClient.get('/analysis/my-jobs');
+    return data;
+};
+
+export const enrichAnalysis = (jobId) => {
+    return apiClient.post(`/analysis/enrich/${jobId}`);
+};
+
+export const generateCreativeImage = (data) => {
+    return apiClient.post('/analysis/generate-image', data);
+};
+
+// === Presets API (si vous les avez ajoutés) ===
+
+export const getUserPresets = async () => {
+  // CORRECT : Le chemin commence par /presets
+  const { data } = await apiClient.get('/presets');
   return data;
+};
+
+export const createPreset = async (presetData) => {
+  const { data } = await apiClient.post('/presets', presetData);
+  return data;
+};
+
+export const deletePreset = async (presetId) => {
+  await apiClient.delete(`/presets/${presetId}`);
 };

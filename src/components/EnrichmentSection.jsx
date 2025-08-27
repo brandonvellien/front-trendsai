@@ -1,12 +1,12 @@
 import { useMutation } from '@tanstack/react-query';
 import { Button, Paper, Title, Box, LoadingOverlay, Alert } from '@mantine/core';
 import ReactMarkdown from 'react-markdown';
-import { enrichAnalysisReport } from '../api/analysisApi';
+import { enrichAnalysis } from '../api/analysisApi';
 import { IconAlertCircle } from '@tabler/icons-react';
 
 export function EnrichmentSection({ jobId }) {
   const mutation = useMutation({
-    mutationFn: () => enrichAnalysisReport(jobId),
+    mutationFn: () => enrichAnalysis(jobId),
   });
 
   return (

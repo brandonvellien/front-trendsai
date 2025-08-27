@@ -1,37 +1,36 @@
 import { useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Container, Loader, Text, Title, Center, Stack, Alert } from '@mantine/core';
 import { IconAlertCircle } from '@tabler/icons-react';
-import { fetchJobStatus } from '../api/analysisApi';
+import { getJobStatus } from '../api/analysisApi';
 import { ReportDataDisplay } from '../components/ReportDataDisplay';
 import { EnrichmentSection } from '../components/EnrichmentSection'; 
 import { ImageGenerationSection } from '../components/ImageGenerationSection'; 
 
 export function ReportPage() {
   const { jobId } = useParams();
+  const queryClient = useQueryClient();
 
-  const { data, error, isLoading } = useQuery({
+  const { data: response, error, isLoading } = useQuery({
     queryKey: ['analysisJob', jobId],
-    queryFn: () => fetchJobStatus(jobId),
+    queryFn: () => getJobStatus(jobId), // Cette fonction renvoie la réponse axios complète
     
-    // Arrête la vérification périodique (toutes les 10s) si la tâche est terminée
+    // On vérifie maintenant response.data.status
     refetchInterval: (query) =>
-      (query.state.data?.status === 'completed' || query.state.data?.status === 'failed') ? false : 10000,
+      (query.state.data?.data?.status === 'completed' || query.state.data?.data?.status === 'failed') ? false : 10000,
       
-    // Empêche le rafraîchissement automatique au retour sur la page si la tâche est terminée
     staleTime: (query) => 
-      (query.state.data?.status === 'completed' || query.state.data?.status === 'failed') ? Infinity : 0,
+      (query.state.data?.data?.status === 'completed' || query.state.data?.data?.status === 'failed') ? Infinity : 0,
 
-    onSuccess: (data) => {
-      // Si la tâche est terminée, on invalide la liste du dashboard
-      if (data.status === 'completed' || data.status === 'failed') {
+    onSuccess: (res) => {
+      // On vérifie la bonne propriété
+      if (res.data.status === 'completed' || res.data.status === 'failed') {
         queryClient.invalidateQueries({ queryKey: ['myJobs'] });
       }
     },
   });
   
-
-  // 1. On vérifie l'état de chargement EN PREMIER
+  // On gère l'état de chargement initial
   if (isLoading) {
     return (
       <Center style={{ height: '80vh' }}>
@@ -43,20 +42,27 @@ export function ReportPage() {
     );
   }
 
-  // 2. On vérifie l'état d'erreur ENSUITE
+  // On gère l'état d'erreur
   if (error) {
     return (
       <Container pt="lg">
         <Alert icon={<IconAlertCircle size="1rem" />} title="Erreur" color="red" variant="light">
-          Une erreur est survenue lors de la récupération du rapport. Veuillez réessayer.
+          Une erreur est survenue lors de la récupération du rapport : {error.message}
         </Alert>
       </Container>
     );
   }
 
-  // 3. SEULEMENT MAINTENANT, on peut utiliser "data" en toute sécurité
+  // CORRECTION MAJEURE : On extrait les vraies données de la réponse axios
+  const job = response?.data;
 
-  if (data.status === 'pending' || data.status === 'processing') {
+  // Si pour une raison quelconque on n'a pas de job, on affiche un message
+  if (!job) {
+     return <Center style={{ height: '80vh' }}><Text>Aucune donnée pour ce rapport.</Text></Center>;
+  }
+
+  // À partir de maintenant, on utilise `job.status`, `job.error`, etc.
+  if (job.status === 'pending' || job.status === 'processing') {
     return (
       <Center style={{ height: '80vh' }}>
         <Stack align="center" gap="lg">
@@ -69,28 +75,29 @@ export function ReportPage() {
     );
   }
 
-  if (data.status === 'failed') {
+  if (job.status === 'failed') {
     return (
       <Container pt="lg">
         <Alert icon={<IconAlertCircle size="1rem" />} title="Échec de l'analyse" color="red" variant="light">
-          {data.error || "Une erreur inconnue est survenue côté backend."}
+          {job.error || "Une erreur inconnue est survenue côté backend."}
         </Alert>
       </Container>
     );
   }
 
-  if (data.status === 'completed') {
+  if (job.status === 'completed') {
     return (
       <>
-        <ReportDataDisplay report={data.result} />
+        <ReportDataDisplay report={job.result} />
         <Container size="xl" pb="xl">
            <EnrichmentSection jobId={jobId} />
-           <ImageGenerationSection report={data.result} />
+           <ImageGenerationSection report={job.result} />
         </Container>
       </>
     );
   }
 
-  // Si aucun des états ci-dessus n'est vrai, on ne rend rien.
   return null;
 }
+
+export default ReportPage;

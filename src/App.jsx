@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 import { Layout } from './components/Layout';
-import { NewAnalysisPage } from './pages/NewAnalysisPage';
+// Ligne corrigée
+import NewAnalysisPage from './pages/NewAnalysisPage';;
 import { ReportPage } from './pages/ReportPage';
 import { SignupPage } from './pages/SignupPage';
 import { LoginPage } from './pages/LoginPage';

@@ -5,15 +5,12 @@ import { Modal, Button, Stack, Select, MultiSelect, Image, Center, Loader, Alert
 import { generateCreativeImage } from '../api/analysisApi';
 import { notifications } from '@mantine/notifications';
 
-// On définit la fonction pour rendre les options en dehors du composant principal
-// C'est une fonction qui retourne du JSX pour chaque option du menu déroulant
-const renderSelectOption = ({ option, checked }) => (
+const renderSelectOption = ({ option }) => (
   <Group flex="1" gap="xs">
     <ColorSwatch color={option.hex} size={14} />
     {option.label}
   </Group>
 );
-
 
 export function ImageGenerationSection({ report }) {
   const [opened, { open, close }] = useDisclosure(false);
@@ -22,13 +19,11 @@ export function ImageGenerationSection({ report }) {
   const garmentOptions = Object.keys(report.garment_trends?.distribution || {});
   const dominantColors = report.color_trends?.dominant_colors || [];
 
-  // --- MODIFICATION ICI ---
-  // La structure des données est maintenant simple et optimisée pour `renderOption`
   const colorOptions = useMemo(() => 
     dominantColors.map(c => ({
-      value: c.hex,          // La valeur reste le code HEX unique
-      label: c.color_name,     // Le label est maintenant juste le nom (texte simple)
-      hex: c.hex             // On garde le hex pour l'utiliser dans renderOption
+      value: c.hex,
+      label: c.color_name,
+      hex: c.hex
     })), 
   [dominantColors]);
 
@@ -38,7 +33,6 @@ export function ImageGenerationSection({ report }) {
 
   const handleGarmentChange = (garments) => {
     setSelectedGarments(garments);
-    // On n'initialise plus de couleur par défaut, le placeholder s'affichera
   };
 
   const handleColorChange = (garment, colorValue) => {
@@ -56,7 +50,6 @@ export function ImageGenerationSection({ report }) {
   });
 
   const handleGenerate = () => {
-    // On vérifie que chaque vêtement sélectionné a une couleur assignée
     for (const garment of selectedGarments) {
         if (!garmentColors[garment]) {
             notifications.show({ title: 'Sélection incomplète', message: `Veuillez choisir une couleur pour ${garment}`, color: 'red' });
@@ -94,8 +87,8 @@ export function ImageGenerationSection({ report }) {
                   data={colorOptions}
                   value={garmentColors[garment]}
                   onChange={(value) => handleColorChange(garment, value)}
-                  renderOption={renderSelectOption} // <-- LA MAGIE EST ICI
-                  allowDeselect={false} // Empêche de dé-sélectionner pour garder le placeholder propre
+                  renderOption={renderSelectOption}
+                  allowDeselect={false}
                 />
               ))}
             </Stack>
@@ -107,8 +100,11 @@ export function ImageGenerationSection({ report }) {
 
           {mutation.isPending && <Center><Loader /></Center>}
           {mutation.isError && <Alert color="red" title="Erreur">La génération a échoué.</Alert>}
+          
+          {/* --- MODIFICATION ICI --- */}
+          {/* On accède à l'URL via mutation.data.data.imageUrl */}
           {mutation.isSuccess && (
-            <Image src={mutation.data.imageUrl} radius="md" alt="Image générée par IA" mt="md" />
+            <Image src={mutation.data.data.imageUrl} radius="md" alt="Image générée par IA" mt="md" />
           )}
         </Stack>
       </Modal>
