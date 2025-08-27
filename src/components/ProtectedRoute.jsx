@@ -1,21 +1,23 @@
-// src/components/ProtectedRoute.jsx
-import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth.jsx';
 import { Center, Loader } from '@mantine/core';
 
 export function ProtectedRoute() {
-  const { user, isLoading } = useAuth();
+  const { user, loading } = useAuth();
+  const location = useLocation();
 
-  if (isLoading) {
-    // Affiche un loader pendant la vérification de l'état de connexion
-    return <Center style={{ height: '100vh' }}><Loader /></Center>;
+  if (loading) {
+    return (
+      <Center style={{ height: '100vh' }}>
+        <Loader />
+      </Center>
+    );
   }
 
   if (!user) {
-    // Si pas d'utilisateur, redirige vers la page de connexion
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Si l'utilisateur est connecté, affiche la page demandée
+  // Si l'utilisateur est bien connecté, on affiche la route enfant demandée.
   return <Outlet />;
 }

@@ -11,11 +11,12 @@ export function ReportPage() {
   const { jobId } = useParams();
   const queryClient = useQueryClient();
 
+  // On renomme "data" en "response" pour plus de clarté
   const { data: response, error, isLoading } = useQuery({
     queryKey: ['analysisJob', jobId],
-    queryFn: () => getJobStatus(jobId), // Cette fonction renvoie la réponse axios complète
+    queryFn: () => getJobStatus(jobId), // Renvoie la réponse axios complète
     
-    // On vérifie maintenant response.data.status
+    // On vérifie maintenant la bonne propriété : response.data.status
     refetchInterval: (query) =>
       (query.state.data?.data?.status === 'completed' || query.state.data?.data?.status === 'failed') ? false : 10000,
       
@@ -23,14 +24,14 @@ export function ReportPage() {
       (query.state.data?.data?.status === 'completed' || query.state.data?.data?.status === 'failed') ? Infinity : 0,
 
     onSuccess: (res) => {
-      // On vérifie la bonne propriété
+      // On vérifie la bonne propriété ici aussi
       if (res.data.status === 'completed' || res.data.status === 'failed') {
         queryClient.invalidateQueries({ queryKey: ['myJobs'] });
       }
     },
   });
   
-  // On gère l'état de chargement initial
+  // Le chargement initial
   if (isLoading) {
     return (
       <Center style={{ height: '80vh' }}>
@@ -42,7 +43,7 @@ export function ReportPage() {
     );
   }
 
-  // On gère l'état d'erreur
+  // La gestion d'erreur
   if (error) {
     return (
       <Container pt="lg">
@@ -56,9 +57,9 @@ export function ReportPage() {
   // CORRECTION MAJEURE : On extrait les vraies données de la réponse axios
   const job = response?.data;
 
-  // Si pour une raison quelconque on n'a pas de job, on affiche un message
+  // Sécurité au cas où `job` serait vide
   if (!job) {
-     return <Center style={{ height: '80vh' }}><Text>Aucune donnée pour ce rapport.</Text></Center>;
+     return <Center style={{ height: '80vh' }}><Text>Aucune donnée disponible pour ce rapport.</Text></Center>;
   }
 
   // À partir de maintenant, on utilise `job.status`, `job.error`, etc.
