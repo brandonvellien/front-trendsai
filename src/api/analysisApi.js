@@ -1,8 +1,8 @@
 import axios from 'axios';
 import { auth } from '../firebase';
 
-//const API_BASE_URL = 'https://trends-ai-backend-image2-382329904395.europe-west1.run.app/api';
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = 'https://trends-ai-backend-image2-382329904395.europe-west1.run.app/api';
+//const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
 });
