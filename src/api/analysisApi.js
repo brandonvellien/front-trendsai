@@ -1,8 +1,8 @@
 import axios from 'axios';
 import { auth } from '../firebase';
 
-const API_BASE_URL = 'https://trends-ai-backend-image2-382329904395.europe-west1.run.app/api';
-//const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+//const API_BASE_URL = 'https://trends-ai-backend-image2-382329904395.europe-west1.run.app/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
 });
@@ -36,8 +36,15 @@ export const fetchMyJobs = async () => {
     return data;
 };
 
+
 export const enrichAnalysis = (jobId) => {
     return apiClient.post(`/analysis/enrich/${jobId}`);
+};
+
+export const enrichAnalysisReport = async (jobId, selections) => {
+  // On envoie les sélections dans le corps de la requête
+  const { data } = await apiClient.post(`/analysis/enrich/${jobId}`, selections);
+  return data;
 };
 
 export const generateCreativeImage = (data) => {

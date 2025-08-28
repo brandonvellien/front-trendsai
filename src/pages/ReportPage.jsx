@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom';
+import { data, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Container, Loader, Text, Title, Center, Stack, Alert } from '@mantine/core';
 import { IconAlertCircle } from '@tabler/icons-react';
@@ -91,7 +91,7 @@ export function ReportPage() {
       <>
         <ReportDataDisplay report={job.result} />
         <Container size="xl" pb="xl">
-           <EnrichmentSection jobId={jobId} />
+           <EnrichmentSection jobId={jobId} report={job.result} />
            <ImageGenerationSection report={job.result} />
         </Container>
       </>
