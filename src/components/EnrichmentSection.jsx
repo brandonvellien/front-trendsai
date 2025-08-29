@@ -1,10 +1,12 @@
 import { useState, useMemo } from 'react';
 import { useDisclosure } from '@mantine/hooks';
 import { useMutation } from '@tanstack/react-query';
-import { Modal, Button, Stack, Select, MultiSelect, Paper, Title, Box, LoadingOverlay, Alert, Text, ColorSwatch, Group } from '@mantine/core';
+import { Modal, Button, Stack, Select, MultiSelect, Paper, Title, Box, Alert, Text, ColorSwatch, Group, Skeleton } from '@mantine/core';
 import ReactMarkdown from 'react-markdown';
 import { enrichAnalysisReport } from '../api/analysisApi';
 import { IconAlertCircle } from '@tabler/icons-react';
+import { notifications } from '@mantine/notifications';
+
 
 const renderSelectOption = ({ option }) => (
     <Group flex="1" gap="xs">
@@ -18,7 +20,6 @@ export function EnrichmentSection({ jobId, report }) {
 
   const [opened, { open, close }] = useDisclosure(false);
 
-  // Préparation des données pour les menus déroulants
   const styleOptions = Object.keys(report.style_trends?.distribution || {});
   const garmentOptions = Object.keys(report.garment_trends?.distribution || {});
   const dominantColors = report.color_trends?.dominant_colors || [];
@@ -30,32 +31,49 @@ export function EnrichmentSection({ jobId, report }) {
     })), 
   [dominantColors]);
 
-  // --- MODIFICATION ICI : Les états initiaux sont nuls (non sélectionnés) ---
   const [selectedStyle, setSelectedStyle] = useState(null);
   const [selectedGarments, setSelectedGarments] = useState([]);
   const [selectedColorHex, setSelectedColorHex] = useState(null);
   
   const mutation = useMutation({
     mutationFn: (selections) => enrichAnalysisReport(jobId, selections),
+    onSuccess: () => {
+        notifications.show({
+            title: 'Synthèse terminée',
+            message: 'Votre rapport stratégique enrichi est prêt.',
+            color: 'green'
+        });
+    },
+    onError: () => {
+        notifications.show({
+            title: 'Erreur',
+            message: 'La génération de la synthèse a échoué.',
+            color: 'red'
+        });
+    }
   });
 
   const handleEnrich = () => {
-    // On ne construit l'objet qu'avec les sélections qui ont été faites
     const selections = {};
     if (selectedStyle) selections.style = selectedStyle;
     if (selectedGarments.length > 0) selections.garments = selectedGarments;
     if (selectedColorHex) {
       const colorObject = dominantColors.find(c => c.hex === selectedColorHex);
-      if (colorObject) selections.color = colorObject.color_name;
+      if (colorObject) {
+         selections.coloredGarments = [{
+            color: colorObject,
+            garment: selectedGarments.length > 0 ? selectedGarments[0] : 'clothing'
+         }];
+      }
     }
 
-    // On s'assure qu'au moins un critère est sélectionné
     if (Object.keys(selections).length === 0) {
-        notifications.show({ title: 'Erreur', message: 'Veuillez sélectionner au moins un critère de recherche.', color: 'red' });
+        notifications.show({ title: 'Aucune sélection', message: 'Veuillez sélectionner au moins un critère à analyser.', color: 'orange' });
         return;
     }
 
     mutation.mutate(selections);
+    // On ferme la modale immédiatement pour voir le chargement sur la page
     close();
   };
 
@@ -63,7 +81,6 @@ export function EnrichmentSection({ jobId, report }) {
     <Paper withBorder shadow="sm" p="lg" radius="md" mt="xl">
       <Modal opened={opened} onClose={close} title="Personnaliser la Recherche Intelligente" size="lg">
         <Stack>
-          {/* --- MODIFICATION ICI : Ajout de placeholder et 'clearable' --- */}
           <Select 
             label="Focus sur un style" 
             placeholder="Tous les styles (Optionnel)"
@@ -99,19 +116,36 @@ export function EnrichmentSection({ jobId, report }) {
       <Title order={3} mb="md">Rapport Stratégique Enrichi</Title>
       
       <Box pos="relative">
-        <LoadingOverlay visible={mutation.isPending} />
+        {/* === C'EST ICI QUE LE CHANGEMENT A LIEU === */}
+
+        {/* 1. Si la tâche est en cours, on affiche un squelette de chargement */}
+        {mutation.isPending && (
+            <Stack>
+                <Skeleton height={12} radius="sm" />
+                <Skeleton height={8} radius="sm" />
+                <Skeleton height={8} mt="sm" radius="sm" />
+                <Skeleton height={8} radius="sm" />
+                <Skeleton height={8} width="70%" radius="sm" />
+            </Stack>
+        )}
+
+        {/* 2. Si la tâche a réussi, on affiche le résultat */}
         {mutation.isSuccess && (
           <Box p="md" bg="gray.0" style={{ borderRadius: 'var(--mantine-radius-md)' }}>
             <ReactMarkdown>{mutation.data.enrichedText}</ReactMarkdown>
           </Box>
         )}
+
+        {/* 3. Si la tâche a échoué, on affiche une alerte */}
         {mutation.isError && (
           <Alert icon={<IconAlertCircle size="1rem" />} title="Erreur" color="red">
             Impossible de générer le rapport enrichi.
           </Alert>
         )}
-        {!mutation.data && !mutation.isPending && (
-          <Text c="dimmed">Cliquez sur le bouton pour personnaliser et lancer une recherche.</Text>
+
+        {/* 4. À l'état initial, on affiche le message par défaut */}
+        {!mutation.isPending && !mutation.isSuccess && !mutation.isError &&(
+          <Text c="dimmed">Cliquez sur le bouton pour personnaliser la recherche et générer une synthèse stratégique.</Text>
         )}
       </Box>
 

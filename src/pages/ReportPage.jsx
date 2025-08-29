@@ -69,7 +69,7 @@ export function ReportPage() {
         <Stack align="center" gap="lg">
           <Loader size="xl" color="violet" />
           <Title order={3}>Analyse en cours...</Title>
-          <Text c="dimmed">Le rapport pour la tâche {jobId} est en cours de génération.</Text>
+          <Text c="dimmed">Le rapport est en cours de génération, ceci peut prendre quelques minutes.</Text>
           <Text size="sm" c="dimmed">Cette page se mettra à jour automatiquement.</Text>
         </Stack>
       </Center>

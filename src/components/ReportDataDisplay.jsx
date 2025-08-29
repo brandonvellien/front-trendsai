@@ -7,7 +7,29 @@ import { StylePieChart } from './StylePieChart';
 
 export function ReportDataDisplay({ report }) {
   // Extrait le nom du fichier ou de la source pour le titre
-  const sourceName = report?.source_file?.split('/').pop() || "Rapport d'analyse";
+  
+  const getSourceName = () => {
+  const source = report?.source_file;
+  if (!source) return "Rapport d'analyse";
+
+  const formatPart = (str) => str.replace(/[_-]/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+
+  // Cas 1: Si c'est une analyse Tag Walk (depuis un chemin S3)
+  if (source.includes('tagwalk/')) {
+    const parts = source.split('/').filter(p => p); // Sépare le chemin et retire les éléments vides
+    if (parts.length >= 2) {
+      // Prend les deux dernières parties : la marque et la collection
+      const collection = parts[parts.length - 1];
+      const brand = parts[parts.length - 2];
+      return `${formatPart(brand)} - ${formatPart(collection)}`;
+    }
+  }
+
+  // Cas 2: Cas par défaut pour les fichiers JSON Instagram
+  return formatPart(source.split('/').pop().replace('.json', ''));
+};
+
+const sourceName = getSourceName();
 
   // Calcule la liste de toutes les couleurs uniques une seule fois
   const allUniqueColors = useMemo(() => {
